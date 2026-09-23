@@ -1,0 +1,36 @@
+services:
+  paloma-fw:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: paloma-fw:latest
+    container_name: paloma-fw
+    restart: always
+    environment:
+      - PORT=3340
+      - DB_HOST=10.0.0.159
+      - DB_PORT=3306
+      - DB_USER=principalUser
+      - DB_PASSWORD=rl0ipasT-xAHUzLv-bRa
+      - DB_NAME=paloma_security
+      - ADMIN_PASSWORD=sk-litellm-potencial-5KokL8QWU8S6vtx
+      - INTERNAL_SECRET=paloma_fw_internal_secret_2026
+      - FAIL2BAN_SOCK=/var/run/fail2ban/fail2ban.sock
+    volumes:
+      - /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.paloma-fw-http.rule=Host(`fw.potencial.tec.br`)"
+      - "traefik.http.routers.paloma-fw-http.entrypoints=http"
+      - "traefik.http.routers.paloma-fw-http.middlewares=redirect-to-https@file"
+      - "traefik.http.routers.paloma-fw-https.rule=Host(`fw.potencial.tec.br`)"
+      - "traefik.http.routers.paloma-fw-https.entrypoints=https"
+      - "traefik.http.routers.paloma-fw-https.tls=true"
+      - "traefik.http.routers.paloma-fw-https.tls.certresolver=letsencrypt"
+      - "traefik.http.services.paloma-fw.loadbalancer.server.port=3340"
+
+networks:
+  coolify:
+    external: true

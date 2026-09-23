@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paloma Shield // Firewall & Intrusion Defense</title>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="theme-dark">
+  <!-- Login Screen -->
+  <div id="login-view" class="auth-wrapper" style="display: none;">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="brand-badge">
+          <span class="shield-icon">🛡️</span>
+          <span class="brand-title">Paloma Shield</span>
+        </div>
+        <h1 class="auth-heading">Acesso ao Firewall</h1>
+        <p class="auth-sub">Digite a chave mestra para gerenciar o firewall e as regras de banimento.</p>
+      </div>
+
+      <form id="login-form" class="auth-form">
+        <div class="field-group">
+          <label for="admin-password" class="field-label">Chave de Administração</label>
+          <div class="input-container">
+            <input type="password" id="admin-password" class="text-input" placeholder="••••••••••••••••" required autocomplete="current-password">
+            <button type="button" id="toggle-password" class="icon-button" aria-label="Alternar visibilidade">👁️</button>
+          </div>
+        </div>
+
+        <div id="login-error" class="error-banner" style="display: none;" role="alert"></div>
+
+        <button type="submit" id="login-button" class="btn btn-primary btn-block">
+          <span class="btn-text">Entrar no Painel</span>
+          <span class="btn-spinner" style="display: none;"></span>
+        </button>
+      </form>
+      <div class="auth-footer">
+        <span>Paloma Host • Oracle Cloud Infrastructure</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Screen -->
+  <div id="dashboard-view" class="app-shell" style="display: none;">
+    <!-- Top Navigation -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-mark">
+          <span class="shield-emblem">🛡️</span>
+          <div class="brand-text">
+            <span class="brand-name">Paloma Shield</span>
+            <span class="brand-sub">OCI HeatWave & Traefik Defense</span>
+          </div>
+        </div>
+        <div class="status-indicator" id="live-indicator">
+          <span class="pulse-dot"></span>
+          <span class="status-label">Protegido • Fail2ban Ativo</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <div class="refresh-control">
+          <label for="refresh-rate" class="control-label">Atualização:</label>
+          <select id="refresh-rate" class="select-input">
+            <option value="5000">5 segundos</option>
+            <option value="15000" selected>15 segundos</option>
+            <option value="30000">30 segundos</option>
+            <option value="0">Pausado</option>
+          </select>
+        </div>
+        <button id="btn-manual-refresh" class="btn btn-secondary" title="Atualizar agora">
+          <span>Atualizar</span>
+        </button>
+        <button id="btn-logout" class="btn btn-ghost" title="Encerrar sessão">
+          <span>Sair</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Operational Metric Highlights -->
+      <section class="metrics-grid" aria-label="Métricas de Segurança">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">IPs Banidos no Momento</span>
+            <span class="metric-pill pill-danger">Ativos</span>
+          </div>
+          <div class="metric-value font-mono" id="stat-active-bans">-</div>
+          <div class="metric-footer" id="stat-active-subtitle">Monitorando /var/log/traefik/access.log</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Bloqueios nas últimas 24h</span>
+            <span class="metric-pill pill-warning">Ataques 401</span>
+          </div>
+          <div class="metric-value font-mono" id="stat-bans-24h">-</div>
+          <div class="metric-footer">Gatilho: 5 erros em 1 hora</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Total Histórico de Bloqueios</span>
+            <span class="metric-pill pill-neutral">MySQL HeatWave</span>
+          </div>
+          <div class="metric-value font-mono" id="stat-total-bans">-</div>
+          <div class="metric-footer">Persistido no banco paloma_security</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span class="metric-title">Desbanimentos Efetuados</span>
+            <span class="metric-pill pill-success">Liberados</span>
+          </div>
+          <div class="metric-value font-mono" id="stat-total-unbans">-</div>
+          <div class="metric-footer">Manuais e expirações naturais</div>
+        </div>
+      </section>
+
+      <!-- Active Bans Section -->
+      <section class="section-container">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Bloqueios em Vigor no Firewall</h2>
+            <p class="section-desc">IPs atualmente retidos na cadeia <code class="code-inline">f2b-traefik-401</code> das tabelas DOCKER-USER e INPUT.</p>
+          </div>
+          <span class="badge-count" id="active-count-badge">0 ativos</span>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="data-table" id="table-active-bans">
+              <thead>
+                <tr>
+                  <th scope="col">Endereço IP</th>
+                  <th scope="col">Jail / Regra</th>
+                  <th scope="col">Falhas</th>
+                  <th scope="col">Bloqueado em</th>
+                  <th scope="col">Expiração Estimada</th>
+                  <th scope="col" class="text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="active-bans-body">
+                <tr>
+                  <td colspan="6" class="table-empty">Carregando bloqueios ativos...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Security Events History -->
+      <section class="section-container">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Histórico de Incidentes e Auditoria</h2>
+            <p class="section-desc">Registro permanente gravado na instância de MySQL HeatWave da Oracle Cloud.</p>
+          </div>
+          <div class="table-filters">
+            <input type="text" id="filter-ip" class="search-input" placeholder="Filtrar por IP...">
+            <select id="filter-type" class="select-input select-sm">
+              <option value="">Todos os eventos</option>
+              <option value="ban">Apenas Bloqueios</option>
+              <option value="unban">Desbloqueios Automáticos</option>
+              <option value="manual_unban">Desbloqueios Manuais</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-card">
+          <div class="table-responsive">
+            <table class="data-table" id="table-events">
+              <thead>
+                <tr>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Endereço IP</th>
+                  <th scope="col">Jail</th>
+                  <th scope="col">Motivo do Evento</th>
+                  <th scope="col">Origem / Autor</th>
+                  <th scope="col">Data e Hora</th>
+                </tr>
+              </thead>
+              <tbody id="events-body">
+                <tr>
+                  <td colspan="6" class="table-empty">Carregando histórico...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-pagination" id="events-pagination">
+            <span class="pagination-info" id="pagination-info">Mostrando 0 registros</span>
+            <div class="pagination-actions">
+              <button id="btn-prev-page" class="btn btn-secondary btn-sm" disabled>Anterior</button>
+              <button id="btn-next-page" class="btn btn-secondary btn-sm" disabled>Próxima</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Unban Confirmation Modal -->
+  <div id="unban-modal" class="modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-title" class="modal-heading">Confirmar Desbloqueio de IP</h3>
+        <button id="modal-close" class="modal-close-btn" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal-body">
+        <p>Você está prestes a remover o banimento do seguinte endereço no Fail2ban e no firewall:</p>
+        <div class="ip-highlight-box font-mono" id="modal-target-ip">0.0.0.0</div>
+        <p class="modal-warning">Essa ação remove a regra <code class="code-inline">DROP</code> das portas 80/443 no iptables e reativa o acesso do chamador imediatamente.</p>
+        
+        <div class="field-group mt-3">
+          <label for="modal-notes" class="field-label">Motivo do Desbloqueio (Auditoria)</label>
+          <input type="text" id="modal-notes" class="text-input" placeholder="Ex: IP corporativo de homologação ou teste">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="modal-cancel-btn" class="btn btn-secondary">Cancelar</button>
+        <button id="modal-confirm-btn" class="btn btn-danger">
+          <span class="btn-text">Desbanir IP</span>
+          <span class="btn-spinner" style="display: none;"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Toast Notification Area -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
