@@ -53,75 +53,98 @@
 
   function setupEventListeners() {
     // Password toggle
-    togglePasswordBtn.addEventListener('click', () => {
-      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-      passwordInput.setAttribute('type', type);
-      togglePasswordBtn.textContent = type === 'password' ? '👁️' : '🔒';
-    });
+    if (togglePasswordBtn && passwordInput) {
+      togglePasswordBtn.addEventListener('click', () => {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        togglePasswordBtn.textContent = type === 'password' ? '👁️' : '🔒';
+      });
+    }
 
     // Login submit
-    loginForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      await handleLogin();
-    });
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await handleLogin();
+      });
+    }
 
     // Logout
-    btnLogout.addEventListener('click', async () => {
-      await handleLogout();
-    });
+    if (btnLogout) {
+      btnLogout.addEventListener('click', async () => {
+        await handleLogout();
+      });
+    }
 
     // Refresh controls
-    btnManualRefresh.addEventListener('click', () => {
-      refreshAllData();
-    });
+    if (btnManualRefresh) {
+      btnManualRefresh.addEventListener('click', () => {
+        refreshAllData();
+      });
+    }
 
-    refreshRateSelect.addEventListener('change', () => {
-      setupAutoRefresh();
-    });
+    if (refreshRateSelect) {
+      refreshRateSelect.addEventListener('change', () => {
+        setupAutoRefresh();
+      });
+    }
 
     // Filters
     let debounceTimer;
-    filterIP.addEventListener('input', () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
+    if (filterIP) {
+      filterIP.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          eventsPage = 1;
+          fetchEvents();
+        }, 300);
+      });
+    }
+
+    if (filterType) {
+      filterType.addEventListener('change', () => {
         eventsPage = 1;
         fetchEvents();
-      }, 300);
-    });
-
-    filterType.addEventListener('change', () => {
-      eventsPage = 1;
-      fetchEvents();
-    });
+      });
+    }
 
     // Pagination
-    btnPrevPage.addEventListener('click', () => {
-      if (eventsPage > 1) {
-        eventsPage--;
-        fetchEvents();
-      }
-    });
+    if (btnPrevPage) {
+      btnPrevPage.addEventListener('click', () => {
+        if (eventsPage > 1) {
+          eventsPage--;
+          fetchEvents();
+        }
+      });
+    }
 
-    btnNextPage.addEventListener('click', () => {
-      eventsPage++;
-      fetchEvents();
-    });
+    if (btnNextPage) {
+      btnNextPage.addEventListener('click', () => {
+        eventsPage++;
+        fetchEvents();
+      });
+    }
 
     // Modal controls
-    modalCancelBtn.addEventListener('click', closeModal);
-    modalCloseBtn.addEventListener('click', closeModal);
-    unbanModal.addEventListener('click', (e) => {
-      if (e.target === unbanModal) closeModal();
-    });
+    if (modalCancelBtn) modalCancelBtn.addEventListener('click', closeModal);
+    const closeBtn = document.getElementById('modal-close-btn') || document.getElementById('modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (unbanModal) {
+      unbanModal.addEventListener('click', (e) => {
+        if (e.target === unbanModal) closeModal();
+      });
+    }
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && unbanModal.style.display !== 'none') {
+      if (e.key === 'Escape' && unbanModal && unbanModal.style.display !== 'none') {
         closeModal();
       }
     });
 
-    modalConfirmBtn.addEventListener('click', async () => {
-      await executeUnban();
-    });
+    if (modalConfirmBtn) {
+      modalConfirmBtn.addEventListener('click', async () => {
+        await executeUnban();
+      });
+    }
   }
 
   async function checkAuth() {
