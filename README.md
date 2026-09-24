@@ -37,3 +37,5 @@ Painel de segurança e observabilidade para firewall, mitigação de intrusões 
 ├── web/                        # Interface gráfica (HTML5, OKLCH CSS, Vanilla JS)
 └── main.go                     # Ponto de entrada do serviço
 ```
+
+<!-- CI/CD Webhook verified: Thu Sep 24 00:44:26 -03 2026 -->
