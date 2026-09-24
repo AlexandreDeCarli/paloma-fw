@@ -150,6 +150,19 @@ func (s *Store) RecordBan(ctx context.Context, ip, jail string, failures, durati
 	return tx.Commit()
 }
 
+// EnsureActiveBan verifies if an IP is already recorded as active, and if not, records it
+func (s *Store) EnsureActiveBan(ctx context.Context, ip, jail string, failures, durationSeconds int, reason, actor string) error {
+	var count int
+	err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM active_bans WHERE ip = ? AND status = 'active'", ip).Scan(&count)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return s.RecordBan(ctx, ip, jail, failures, durationSeconds, reason, actor)
+	}
+	return nil
+}
+
 // RecordUnban marks an active ban as unbanned and records an unban event
 func (s *Store) RecordUnban(ctx context.Context, ip, jail, actor, notes string, manual bool) error {
 	now := time.Now().UTC()

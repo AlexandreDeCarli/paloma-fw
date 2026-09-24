@@ -146,14 +146,23 @@ func (s *Server) handleAuthCheck(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleGetBans(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+
+	// 1. Query live fail2ban status from socket
+	liveStatus, _ := s.f2b.GetStatus(ctx, "traefik-401")
+
+	// 2. Automatically reconcile any live kernel/Fail2ban banned IPs into the database
+	if liveStatus != nil && len(liveStatus.BannedIPList) > 0 && s.store != nil {
+		for _, liveIP := range liveStatus.BannedIPList {
+			_ = s.store.EnsureActiveBan(ctx, liveIP, "traefik-401", 15, 172800, "Sincronizado automaticamente do socket do Fail2ban", "fail2ban_sync")
+		}
+	}
+
+	// 3. List active bans from MySQL
 	bans, err := s.store.ListActiveBans(ctx)
 	if err != nil {
 		http.Error(w, `{"error":"failed to fetch bans from database"}`, http.StatusInternalServerError)
 		return
 	}
-
-	// Also query live fail2ban status
-	liveStatus, _ := s.f2b.GetStatus(ctx, "traefik-401")
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{

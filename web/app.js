@@ -256,6 +256,24 @@
     if (!res.ok) return;
     const data = await res.json();
     const active = data.active_bans || [];
+
+    // Fallback: merge any live kernel ban from Fail2ban socket if not in database yet
+    const existingIPs = new Set(active.map(b => b.ip));
+    if (data.live_status && Array.isArray(data.live_status.banned_ip_list)) {
+      for (const ip of data.live_status.banned_ip_list) {
+        if (!existingIPs.has(ip)) {
+          active.push({
+            ip: ip,
+            jail: data.live_status.jail || 'traefik-401',
+            failures: 15,
+            banned_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 172800000).toISOString(),
+            status: 'active'
+          });
+        }
+      }
+    }
+
     activeCountBadge.textContent = `${active.length} ${active.length === 1 ? 'ativo' : 'ativos'}`;
 
     if (active.length === 0) {
